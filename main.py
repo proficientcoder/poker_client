@@ -91,10 +91,11 @@ def main():
     myfont = pygame.font.SysFont('arial', 38)
     myfont2 = pygame.font.SysFont('arial', 20)
     myfont3 = pygame.font.SysFont('arial', 56)
+    myfont4 = pygame.font.SysFont('arial', 28)
 
     ses = requests.Session()
 
-    size = (1440, 1080)
+    size = (1440, 810)
     aspect = size[0] / size[1]
 
     background = pygame.image.load('static/background.png')
@@ -102,6 +103,9 @@ def main():
     button = pygame.image.load('static/button.png')
     cardSmallFront = pygame.image.load('static/card-small-front.png')
     cardBigFront = pygame.image.load('static/card-big-front.png')
+    actionButton = pygame.image.load('static/action-button.png')
+    betSlider = pygame.image.load('static/bet-slider.png')
+    slider = pygame.image.load('static/slider.png')
 
     screen = pygame.display.set_mode(size, pygame.RESIZABLE)
     pygame.display.set_caption("Public-exchange.com")
@@ -125,7 +129,7 @@ def main():
         seatPositions = []
         buttonPositions = []
         moneyPositions = []
-        seats = 5  #result['nrOfSeats']
+        seats = 11  #result['nrOfSeats']
         org = (center[0], center[1] + dist)
 
         for i in range(0, seats):
@@ -186,6 +190,24 @@ def main():
 
         bet = myfont2.render('Total pot: $56.78', True, (192,192,192))
         center_blit(screen, bet, (center[0], center[1]+75-25))
+
+        center_blit(screen, actionButton, (125, 760))
+        fold_button = myfont4.render('FOLD', True, (192,192,192))
+        center_blit(screen, fold_button, (125, 760))
+
+        center_blit(screen, actionButton, (375, 760))
+        call_button = myfont4.render('CALL 100', True, (192,192,192))
+        center_blit(screen, call_button, (375, 760))
+
+        center_blit(screen, actionButton, (625, 760))
+        raise_button = myfont4.render('RAISE 200', True, (192,192,192))
+        center_blit(screen, raise_button, (625, 760))
+
+        center_blit(screen, betSlider, (1095, 760))
+        raise_m = myfont4.render('300', True, (192,192,192))
+        center_blit(screen, raise_m, (845, 760))
+
+        center_blit(screen, slider, (1000, 763))
 
         pygame.display.flip()
         clock.tick(30)
