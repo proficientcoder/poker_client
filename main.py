@@ -1,91 +1,12 @@
 import pygame
 import requests
-from timeit import default_timer as timer
-from datetime import timedelta
-import math
+from multiprocessing import Process
+import time
+
+from inc.support import rotate, center_blit, get_line
 
 
-def rotate(origin, point, angle):
-    angle = math.radians(angle)
-    """
-    Rotate a point counterclockwise by a given angle around a given origin.
-
-    The angle should be given in radians.
-    """
-    ox, oy = origin
-    px, py = point
-
-    qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
-    qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
-    return [qx, qy]
-
-
-def center_blit(screen, grp, cord):
-    r = grp.get_rect()
-    cord = cord[0] - r.width/2, cord[1] - r.height/2
-    screen.blit(grp, cord)
-
-
-def get_line(x1, y1, x2, y2):
-    points = []
-    issteep = abs(y2-y1) > abs(x2-x1)
-    if issteep:
-        x1, y1 = y1, x1
-        x2, y2 = y2, x2
-    rev = False
-    if x1 > x2:
-        x1, x2 = x2, x1
-        y1, y2 = y2, y1
-        rev = True
-    deltax = x2 - x1
-    deltay = abs(y2-y1)
-    error = int(deltax / 2)
-    y = y1
-    ystep = None
-    if y1 < y2:
-        ystep = 1
-    else:
-        ystep = -1
-    for x in range(x1, x2 + 1):
-        if issteep:
-            points.append((y, x))
-        else:
-            points.append((x, y))
-        error -= deltay
-        if error < 0:
-            y += ystep
-            error += deltax
-    # Reverse the list if the coordinates were reversed
-    if rev:
-        points.reverse()
-    return points
-
-
-def translate(value, fromBegin, fromEnd, toBegin, toEnd):
-    '''Translates a point from one system to the other. A system is defined (but
-     not limited) by a begin- and end-value.
-    Parameters:
-        value               : The point to be transformed
-        fromBegin, fromEnd  : System in which the value parameter is now
-        toBegin, toEnd      : System to which value is to be translated
-
-    Returns:
-        translated value in the new system
-
-    Notes:
-    1. For examele; if you wanted 10 on a scale of 1-10 to be translated to a
-       scale of 20-40 you would do:
-           v_new = translate(10, 1, 10, 20, 40)
-    '''
-    leftSpan = fromEnd - fromBegin
-    rightSpan = toEnd - toBegin
-
-    valueScaled = float(value - fromBegin) / float(leftSpan)
-
-    return toBegin + (valueScaled * rightSpan)
-
-
-def main():
+def main(tableId):
     pygame.init()
     pygame.font.init()
     myfont = pygame.font.SysFont('arial', 38)
@@ -118,10 +39,10 @@ def main():
             if event.type == pygame.QUIT:
                 terminated = True
 
-        center_blit(screen, background, (size[0]/2, size[1]/2))
+        center_blit(screen, background, (size[0] / 2, size[1] / 2))
 
-        # result = ses.get('http://127.0.0.1:8000/poker/tableState/')
-        # result = result.json()
+        result = ses.get(f'http://127.0.0.1:8000/poker/tableState/{tableId}/')
+        result = result.json()
 
         center = int(size[0] / 2), int(size[1] / 2) - 40
         dist = 450
@@ -129,7 +50,7 @@ def main():
         seatPositions = []
         buttonPositions = []
         moneyPositions = []
-        seats = 11  #result['nrOfSeats']
+        seats = result['nrOfSeats']
         org = (center[0], center[1] + dist)
 
         for i in range(0, seats):
@@ -145,76 +66,130 @@ def main():
                     moneyPositions.append(points[int(j * 0.5)])
                     break
 
-        for i in range(0, len(seatPositions)):
+        for i in range(0, seats):
             seatp = seatPositions[i]
             center_blit(screen, seat, seatp)
 
-            center_blit(screen, cardSmallFront, (seatp[0] - 20, seatp[1] - 54))
+            if result['players'][i] is not None:
+                if result['players'][i]['cards'] is not None:
+                    c1 = result['players'][i]['cards'][0][0]
+                    s1 = result['players'][i]['cards'][0][1]
+                    c2 = result['players'][i]['cards'][1][0]
+                    s2 = result['players'][i]['cards'][1][1]
 
-            card1 = myfont.render('A', True, (0,0,0))
-            center_blit(screen, card1, (seatp[0] - 21, seatp[1] - 66))
+                    if s1 in ['♠','♣']:
+                        color1 = (0,0,0)
+                    else:
+                        color1 = (255,0,0)
 
-            suit1 = myfont.render('♠', True, (0,0,0))
-            center_blit(screen, suit1, (seatp[0] - 20, seatp[1] - 41))
+                    if s2 in ['♠','♣']:
+                        color2 = (0,0,0)
+                    else:
+                        color2 = (255,0,0)
 
-            center_blit(screen, cardSmallFront, (seatp[0] + 20, seatp[1] - 54))
+                center_blit(screen, cardSmallFront, (seatp[0] - 20, seatp[1] - 54))
 
-            card2 = myfont.render('K', True, (255,0,0))
-            center_blit(screen, card2, (seatp[0] + 19, seatp[1] - 66))
+                card1 = myfont.render(c1, True, color1)
+                center_blit(screen, card1, (seatp[0] - 21, seatp[1] - 66))
 
-            suit2 = myfont.render('♦', True, (255,0,0))
-            center_blit(screen, suit2, (seatp[0] + 20, seatp[1] - 41))
+                suit1 = myfont.render(s1, True, color1)
+                center_blit(screen, suit1, (seatp[0] - 20, seatp[1] - 41))
 
-            buttonp = buttonPositions[i]
-            center_blit(screen, button, buttonp)
+                center_blit(screen, cardSmallFront, (seatp[0] + 20, seatp[1] - 54))
 
-            name = myfont2.render(f'Player {i}', True, (192,192,192))
-            center_blit(screen, name, (seatp[0] + 0, seatp[1] - 11))
+                card2 = myfont.render(c2, True, color2)
+                center_blit(screen, card2, (seatp[0] + 19, seatp[1] - 66))
 
-            money = myfont2.render('$123.45', True, (192,192,192))
-            center_blit(screen, money, (seatp[0] + 0, seatp[1] + 13))
+                suit2 = myfont.render(s2, True, color2)
+                center_blit(screen, suit2, (seatp[0] + 20, seatp[1] - 41))
 
-            bet = myfont2.render('$12.34', True, (192,192,192))
-            center_blit(screen, bet, moneyPositions[i])
+                if result['players'][i]['is_dealer'] == True:
+                    buttonp = buttonPositions[i]
+                    center_blit(screen, button, buttonp)
+
+                txt = result['players'][i]['name']
+                name = myfont2.render(txt, True, (192,192,192))
+                center_blit(screen, name, (seatp[0] + 0, seatp[1] - 13))
+
+                money = myfont2.render(result['players'][i]['balance'], True, (192,192,192))
+                center_blit(screen, money, (seatp[0] + 0, seatp[1] + 12))
+
+                if result['players'][i]['last_bet'] != '':
+                    bet = myfont2.render(result['players'][i]['last_bet'], True, (192,192,192))
+                    center_blit(screen, bet, moneyPositions[i])
+
+            else:
+                name = myfont2.render('Empty seat', True, (192,192,192))
+                center_blit(screen, name, (seatp[0] + 0, seatp[1] - 13))
 
 
         for i in range(0, 5):
-            center_blit(screen, cardBigFront, (center[0] + (i*65) - 130, center[1]-25))
+            if result['board'][i] is not None:
+                center_blit(screen, cardBigFront, (center[0] + (i * 65) - 130, center[1] - 25))
 
-            card2 = myfont3.render('K', True, (255,0,0))
-            center_blit(screen, card2, (center[0] + (i*65) - 131, center[1]-16-25))
+                card2 = myfont3.render('K', True, (255,0,0))
+                center_blit(screen, card2, (center[0] + (i * 65) - 131, center[1] - 16 - 25))
 
-            suit2 = myfont3.render('♦', True, (255,0,0))
-            center_blit(screen, suit2, (center[0] + (i*65) - 130, center[1]+18-25))
+                suit2 = myfont3.render('♦', True, (255,0,0))
+                center_blit(screen, suit2, (center[0] + (i * 65) - 130, center[1] + 18 - 25))
 
 
-        bet = myfont2.render('Total pot: $56.78', True, (192,192,192))
-        center_blit(screen, bet, (center[0], center[1]+75-25))
+        pot = result['pot']
+        bet = myfont2.render(f'Total pot: {pot}', True, (192,192,192))
+        center_blit(screen, bet, (center[0], center[1] + 75 - 25))
 
-        center_blit(screen, actionButton, (125, 760))
-        fold_button = myfont4.render('FOLD', True, (192,192,192))
-        center_blit(screen, fold_button, (125, 760))
+        if 'FOLD' in result['actions']:
+            center_blit(screen, actionButton, (125, 760))
+            fold_button = myfont4.render('FOLD', True, (192,192,192))
+            center_blit(screen, fold_button, (125, 760))
 
-        center_blit(screen, actionButton, (375, 760))
-        call_button = myfont4.render('CALL 100', True, (192,192,192))
-        center_blit(screen, call_button, (375, 760))
+        if 'CALL' in result['actions']:
+            center_blit(screen, actionButton, (375, 760))
+            call_button = myfont4.render('CALL 100', True, (192,192,192))
+            center_blit(screen, call_button, (375, 760))
 
-        center_blit(screen, actionButton, (625, 760))
-        raise_button = myfont4.render('RAISE 200', True, (192,192,192))
-        center_blit(screen, raise_button, (625, 760))
+        if 'RAISE' in result['actions']:
+            center_blit(screen, actionButton, (625, 760))
+            raise_button = myfont4.render('RAISE 200', True, (192,192,192))
+            center_blit(screen, raise_button, (625, 760))
 
-        center_blit(screen, betSlider, (1095, 760))
-        raise_m = myfont4.render('300', True, (192,192,192))
-        center_blit(screen, raise_m, (845, 760))
+        if 'BET' in result['actions'] or 'RAISE' in result['actions']:
+            center_blit(screen, betSlider, (1095, 760))
+            raise_m = myfont4.render('300', True, (192,192,192))
+            center_blit(screen, raise_m, (845, 760))
 
-        center_blit(screen, slider, (1000, 763))
+            center_blit(screen, slider, (1000, 763))
 
         pygame.display.flip()
-        clock.tick(30)
+        clock.tick(2)
 
 pygame.quit()
 
 
-
 if __name__ == '__main__':
-    main()
+    tables = []
+
+    while True:
+        results = requests.get('http://127.0.0.1:8000/poker/listMyTables/')
+        results = results.json()
+        results = results['tables']
+
+        nt = []
+        for t in tables:
+            if t[1].is_alive():
+                nt.append(t)
+        tables = nt
+
+        for r in results:
+            found = False
+            for t in tables:
+                if t[0] == r:
+                    found = True
+
+            if found == False:
+                tableId = r
+                tableProcess = Process(target=main, args=(tableId,))
+                tableProcess.start()
+                tables.append([tableId, tableProcess])
+
+        time.sleep(5)
