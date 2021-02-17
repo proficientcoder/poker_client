@@ -88,9 +88,9 @@ def translate(value, fromBegin, fromEnd, toBegin, toEnd):
 def main():
     pygame.init()
     pygame.font.init()
-    myfont = pygame.font.SysFont('arial', 30)
-    myfont2 = pygame.font.SysFont('arial', 18)
-    myfont3 = pygame.font.SysFont('arial', 42)
+    myfont = pygame.font.SysFont('arial', 38)
+    myfont2 = pygame.font.SysFont('arial', 20)
+    myfont3 = pygame.font.SysFont('arial', 56)
 
     ses = requests.Session()
 
@@ -125,7 +125,7 @@ def main():
         seatPositions = []
         buttonPositions = []
         moneyPositions = []
-        seats = 6  #result['nrOfSeats']
+        seats = 5  #result['nrOfSeats']
         org = (center[0], center[1] + dist)
 
         for i in range(0, seats):
@@ -138,7 +138,7 @@ def main():
                 if c == (128, 128, 128, 255):
                     seatPositions.append(points[j])
                     buttonPositions.append(points[int(j * 0.8)])
-                    moneyPositions.append(points[int(j * 0.6)])
+                    moneyPositions.append(points[int(j * 0.5)])
                     break
 
         for i in range(0, len(seatPositions)):
@@ -148,18 +148,18 @@ def main():
             center_blit(screen, cardSmallFront, (seatp[0] - 20, seatp[1] - 54))
 
             card1 = myfont.render('A', True, (0,0,0))
-            center_blit(screen, card1, (seatp[0] - 20, seatp[1] - 65))
+            center_blit(screen, card1, (seatp[0] - 21, seatp[1] - 66))
 
             suit1 = myfont.render('♠', True, (0,0,0))
-            center_blit(screen, suit1, (seatp[0] - 20, seatp[1] - 40))
+            center_blit(screen, suit1, (seatp[0] - 20, seatp[1] - 41))
 
             center_blit(screen, cardSmallFront, (seatp[0] + 20, seatp[1] - 54))
 
             card2 = myfont.render('K', True, (255,0,0))
-            center_blit(screen, card2, (seatp[0] + 20, seatp[1] - 65))
+            center_blit(screen, card2, (seatp[0] + 19, seatp[1] - 66))
 
             suit2 = myfont.render('♦', True, (255,0,0))
-            center_blit(screen, suit2, (seatp[0] + 20, seatp[1] - 40))
+            center_blit(screen, suit2, (seatp[0] + 20, seatp[1] - 41))
 
             buttonp = buttonPositions[i]
             center_blit(screen, button, buttonp)
@@ -178,7 +178,7 @@ def main():
             center_blit(screen, cardBigFront, (center[0] + (i*65) - 130, center[1]-25))
 
             card2 = myfont3.render('K', True, (255,0,0))
-            center_blit(screen, card2, (center[0] + (i*65) - 130, center[1]-16-25))
+            center_blit(screen, card2, (center[0] + (i*65) - 131, center[1]-16-25))
 
             suit2 = myfont3.render('♦', True, (255,0,0))
             center_blit(screen, suit2, (center[0] + (i*65) - 130, center[1]+18-25))
