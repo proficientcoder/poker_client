@@ -1,4 +1,5 @@
 import pygame
+from pygame.locals import *
 import requests
 from multiprocessing import Process
 import time
@@ -34,10 +35,18 @@ def main(tableId):
     terminated = False
     clock = pygame.time.Clock()
 
+    canFold = False
     while not terminated:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminated = True
+            if event.type == MOUSEBUTTONUP:
+                if event.button == 1:
+                    fold_rect = pygame.Rect(6,720,240,80)
+                    if fold_rect.collidepoint(pygame.mouse.get_pos()) and canFold:
+                        ses.get(f'http://127.0.0.1:8000/poker/actionFold/{tableId}/')
+
+
 
         center_blit(screen, background, (size[0] / 2, size[1] / 2))
 
@@ -72,10 +81,10 @@ def main(tableId):
 
             if result['players'][i] is not None:
                 if result['players'][i]['cards'] is not None:
-                    c1 = result['players'][i]['cards'][0][0]
-                    s1 = result['players'][i]['cards'][0][1]
-                    c2 = result['players'][i]['cards'][1][0]
-                    s2 = result['players'][i]['cards'][1][1]
+                    c1 = result['players'][i]['cards'][0]
+                    s1 = result['players'][i]['cards'][1]
+                    c2 = result['players'][i]['cards'][2]
+                    s2 = result['players'][i]['cards'][3]
 
                     if s1 in ['♠','♣']:
                         color1 = (0,0,0)
@@ -87,23 +96,23 @@ def main(tableId):
                     else:
                         color2 = (255,0,0)
 
-                center_blit(screen, cardSmallFront, (seatp[0] - 20, seatp[1] - 54))
+                    center_blit(screen, cardSmallFront, (seatp[0] - 20, seatp[1] - 54))
 
-                card1 = myfont.render(c1, True, color1)
-                center_blit(screen, card1, (seatp[0] - 21, seatp[1] - 66))
+                    card1 = myfont.render(c1, True, color1)
+                    center_blit(screen, card1, (seatp[0] - 21, seatp[1] - 66))
 
-                suit1 = myfont.render(s1, True, color1)
-                center_blit(screen, suit1, (seatp[0] - 20, seatp[1] - 41))
+                    suit1 = myfont.render(s1, True, color1)
+                    center_blit(screen, suit1, (seatp[0] - 20, seatp[1] - 41))
 
-                center_blit(screen, cardSmallFront, (seatp[0] + 20, seatp[1] - 54))
+                    center_blit(screen, cardSmallFront, (seatp[0] + 20, seatp[1] - 54))
 
-                card2 = myfont.render(c2, True, color2)
-                center_blit(screen, card2, (seatp[0] + 19, seatp[1] - 66))
+                    card2 = myfont.render(c2, True, color2)
+                    center_blit(screen, card2, (seatp[0] + 19, seatp[1] - 66))
 
-                suit2 = myfont.render(s2, True, color2)
-                center_blit(screen, suit2, (seatp[0] + 20, seatp[1] - 41))
+                    suit2 = myfont.render(s2, True, color2)
+                    center_blit(screen, suit2, (seatp[0] + 20, seatp[1] - 41))
 
-                if result['players'][i]['is_dealer'] == True:
+                if result['dealer'] == i+1:
                     buttonp = buttonPositions[i]
                     center_blit(screen, button, buttonp)
 
@@ -138,27 +147,33 @@ def main(tableId):
         bet = myfont2.render(f'Total pot: {pot}', True, (192,192,192))
         center_blit(screen, bet, (center[0], center[1] + 75 - 25))
 
-        if 'FOLD' in result['actions']:
-            center_blit(screen, actionButton, (125, 760))
-            fold_button = myfont4.render('FOLD', True, (192,192,192))
-            center_blit(screen, fold_button, (125, 760))
+        # Actions
+        actor = result['next_to_act']
+        if result['players'][actor-1]['name'] == 'test':
 
-        if 'CALL' in result['actions']:
-            center_blit(screen, actionButton, (375, 760))
-            call_button = myfont4.render('CALL 100', True, (192,192,192))
-            center_blit(screen, call_button, (375, 760))
+            canFold=False
+            if 'FOLD' in result['actions']:
+                canFold=True
+                center_blit(screen, actionButton, (125, 760))
+                fold_button = myfont4.render('FOLD', True, (192,192,192))
+                center_blit(screen, fold_button, (125, 760))
 
-        if 'RAISE' in result['actions']:
-            center_blit(screen, actionButton, (625, 760))
-            raise_button = myfont4.render('RAISE 200', True, (192,192,192))
-            center_blit(screen, raise_button, (625, 760))
+            if 'CALL' in result['actions']:
+                center_blit(screen, actionButton, (375, 760))
+                call_button = myfont4.render('CALL', True, (192,192,192))
+                center_blit(screen, call_button, (375, 760))
 
-        if 'BET' in result['actions'] or 'RAISE' in result['actions']:
-            center_blit(screen, betSlider, (1095, 760))
-            raise_m = myfont4.render('300', True, (192,192,192))
-            center_blit(screen, raise_m, (845, 760))
+            if 'RAISE' in result['actions']:
+                center_blit(screen, actionButton, (625, 760))
+                raise_button = myfont4.render('RAISE', True, (192,192,192))
+                center_blit(screen, raise_button, (625, 760))
 
-            center_blit(screen, slider, (1000, 763))
+            if 'BET' in result['actions'] or 'RAISE' in result['actions']:
+                center_blit(screen, betSlider, (1095, 760))
+                raise_m = myfont4.render('10', True, (192,192,192))
+                center_blit(screen, raise_m, (845, 760))
+
+                center_blit(screen, slider, (1000, 763))
 
         pygame.display.flip()
         clock.tick(2)
