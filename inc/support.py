@@ -1,5 +1,7 @@
 import math
 
+key = '507a2881-2c1f-4b86-b250-56b0c05932ce'
+host = '10.0.0.2:8000'
 
 def rotate(origin, point, angle):
     angle = math.radians(angle)
