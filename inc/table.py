@@ -50,6 +50,9 @@ def tableMain(tableId):
                     if fold_rect.collidepoint(pygame.mouse.get_pos()) and canFold:
                         ses.get(f'http://{support.host}/poker/actionFold/{tableId}/', params={'key': support.key})
                         print('Fold')
+                    if fold_rect.collidepoint(pygame.mouse.get_pos()) and canCheck:
+                        ses.get(f'http://{support.host}/poker/actionCheck/{tableId}/', params={'key': support.key})
+                        print('Check')
                     call_rect = pygame.Rect(256, 720, 240, 80)
                     if call_rect.collidepoint(pygame.mouse.get_pos()) and canCall:
                         ses.get(f'http://{support.host}/poker/actionCall/{tableId}/', params={'key': support.key})
@@ -128,14 +131,18 @@ def tableMain(tableId):
                     buttonp = buttonPositions[i]
                     support.center_blit(screen, button, buttonp)
 
+                color = (192,192,192)
+                if i+1 == result['next_to_act']:
+                    color = (192,0,0)
+
                 txt = result['players'][i]['name']
-                name = myfont2.render(txt, True, (192,192,192))
+                name = myfont2.render(txt, True, color)
                 support.center_blit(screen, name, (seatp[0] + 0, seatp[1] - 13))
 
-                money = myfont2.render(result['players'][i]['balance'], True, (192,192,192))
+                money = myfont2.render(result['players'][i]['balance'], True, color)
                 support.center_blit(screen, money, (seatp[0] + 0, seatp[1] + 12))
 
-                if result['players'][i]['last_bet'] != '':
+                if float(result['players'][i]['last_bet']) != 0:
                     bet = myfont2.render(result['players'][i]['last_bet'], True, (192,192,192))
                     support.center_blit(screen, bet, moneyPositions[i])
 
@@ -144,15 +151,23 @@ def tableMain(tableId):
                 support.center_blit(screen, name, (seatp[0] + 0, seatp[1] - 13))
 
 
-        for i in range(0, 5):
-            if result['board'][i] is not None:
-                support.center_blit(screen, cardBigFront, (center[0] + (i * 65) - 130, center[1] - 25))
+        for j in range(0, len(result['board']), 2):
+            card = result['board'][j]
+            suit = result['board'][j+1]
 
-                card2 = myfont3.render('K', True, (255,0,0))
-                support.center_blit(screen, card2, (center[0] + (i * 65) - 131, center[1] - 16 - 25))
+            if suit in ['♠', '♣']:
+                color = (0, 0, 0)
+            else:
+                color = (255, 0, 0)
 
-                suit2 = myfont3.render('♦', True, (255,0,0))
-                support.center_blit(screen, suit2, (center[0] + (i * 65) - 130, center[1] + 18 - 25))
+            i = j / 2
+            support.center_blit(screen, cardBigFront, (center[0] + (i * 65) - 130, center[1] - 25))
+
+            card2 = myfont3.render(card, True, color)
+            support.center_blit(screen, card2, (center[0] + (i * 65) - 131, center[1] - 16 - 25))
+
+            suit2 = myfont3.render(suit, True, color)
+            support.center_blit(screen, suit2, (center[0] + (i * 65) - 130, center[1] + 18 - 25))
 
 
         pot = result['pot']
