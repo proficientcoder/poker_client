@@ -61,23 +61,18 @@ def tableMain(tableId):
                     fold_rect = pygame.Rect(6, 720, 240, 80)
                     if fold_rect.collidepoint(pygame.mouse.get_pos()) and canFold:
                         http_session.get(f'http://{support.host}/poker/actionFold/{tableId}/', params={'key': support.key})
-                        print('Fold')
                     if fold_rect.collidepoint(pygame.mouse.get_pos()) and canCheck:
                         http_session.get(f'http://{support.host}/poker/actionCheck/{tableId}/', params={'key': support.key})
-                        print('Check')
                     call_rect = pygame.Rect(256, 720, 240, 80)
                     if call_rect.collidepoint(pygame.mouse.get_pos()) and canCall:
                         http_session.get(f'http://{support.host}/poker/actionCall/{tableId}/', params={'key': support.key})
-                        print('Call')
                     raise_rect = pygame.Rect(506, 720, 240, 80)
                     if raise_rect.collidepoint(pygame.mouse.get_pos()) and canRaise:
-                        #http_session.get(f'http://{support.host}/poker/actionRaise/{tableId}/', params={'key': support.key})
-                        print('Raise')
+                        http_session.get(f'http://{support.host}/poker/actionRaise/{tableId}/', params={'key': support.key, 'bet': sliderValue})
                     slider_rect = pygame.Rect(sliderMin, 720, sliderMax-sliderMin, 80)
                     if slider_rect.collidepoint(pygame.mouse.get_pos()) and canRaise:
                         x, y = pygame.mouse.get_pos()
                         sliderPos = x
-                        print('slide')
 
         # Get actual table state
         if t == 0:
@@ -113,6 +108,8 @@ def tableMain(tableId):
                     break
 
         # Paint in the seats
+        totalPot = float(result['pot'])
+
         for i in range(1, nrOfSeats+1):
             seatPosition = seatPositions[i]
             support.center_blit(screen, imgSeat, seatPosition)
@@ -159,23 +156,28 @@ def tableMain(tableId):
                     support.center_blit(screen, imgButton, buttonp)
 
                 color = white
-                if i+1 == result['next_to_act']:
+                if i == result['next_to_act']:
                     color = red
 
                 txt = result['players'][i]['name']
                 name = playerInfoFont.render(txt, True, color)
                 support.center_blit(screen, name, (seatPosition[0] + 0, seatPosition[1] - 13))
 
-                money = playerInfoFont.render(result['players'][i]['balance'], True, color)
+                money = playerInfoFont.render(str(result['players'][i]['balance']), True, color)
                 support.center_blit(screen, money, (seatPosition[0] + 0, seatPosition[1] + 12))
 
-                if float(result['players'][i]['last_bet']) != 0:
-                    bet = playerInfoFont.render(result['players'][i]['last_bet'], True, white)
+                pbet = result['players'][i]['last_bet']
+                totalPot += float(pbet)
+                if pbet != 0:
+                    bet = playerInfoFont.render(str(pbet), True, white)
                     support.center_blit(screen, bet, moneyPositions[i])
 
             else:
                 name = playerInfoFont.render('Empty seat', True, white)
                 support.center_blit(screen, name, (seatPosition[0] + 0, seatPosition[1] - 13))
+
+        pot = playerInfoFont.render(f'Total pot: {totalPot}', True, white)
+        support.center_blit(screen, pot, (tableCenter[0], tableCenter[1] + 75 - 25))
 
 
         for j in range(0, len(result['board']), 2):
@@ -195,11 +197,6 @@ def tableMain(tableId):
 
             suit2 = boardCardFont.render(support.suitTranslate(suit), True, color)
             support.center_blit(screen, suit2, (tableCenter[0] + (i * 65) - 130, tableCenter[1] + 18 - 25))
-
-
-        pot = result['pot']
-        bet = playerInfoFont.render(f'Total pot: {pot}', True, white)
-        support.center_blit(screen, bet, (tableCenter[0], tableCenter[1] + 75 - 25))
 
         # Actions
         actor = result['next_to_act']
@@ -240,7 +237,7 @@ def tableMain(tableId):
 
             if 'BET' in result['actions'] or 'RAISE' in result['actions']:
                 sliderValue = support.translate(sliderPos, sliderMin, sliderMax, float(result['blind'])/2, float(result['players'][actor]['balance']))
-                sliderValue = round(sliderValue, 2)
+                sliderValue = round(sliderValue, 1)
 
                 support.center_blit(screen, imgBetSlider, (1095, 760))
                 raise_m = actionButtonFont.render(str(sliderValue), True, white)
