@@ -8,27 +8,37 @@ import inc.support as support
 def tableMain(tableId):
     pygame.init()
     pygame.font.init()
-    myfont = pygame.font.SysFont('arial', 38)
-    myfont2 = pygame.font.SysFont('arial', 20)
-    myfont3 = pygame.font.SysFont('arial', 56)
-    myfont4 = pygame.font.SysFont('arial', 28)
 
-    ses = requests.Session()
+    white = (255, 255, 255)
+    black = (0, 0, 0)
+    red = (255, 0, 0)
 
-    size = (1440, 810)
-    aspect = size[0] / size[1]
+    tableRingColor = (128, 128, 128, 255)   # Used to detect edge of table
 
-    background = pygame.image.load('static/background.png')
-    seat = pygame.image.load('static/seat.png')
-    button = pygame.image.load('static/button.png')
-    cardSmallFront = pygame.image.load('static/card-small-front.png')
-    cardSmallBack = pygame.image.load('static/card-small-back.png')
-    cardBigFront = pygame.image.load('static/card-big-front.png')
-    actionButton = pygame.image.load('static/action-button.png')
-    betSlider = pygame.image.load('static/bet-slider.png')
-    slider = pygame.image.load('static/slider.png')
+    playerCardFont = pygame.font.SysFont('arial', 36)
+    playerInfoFont = pygame.font.SysFont('arial', 20)
+    boardCardFont = pygame.font.SysFont('arial', 56)
+    actionButtonFont = pygame.font.SysFont('arial', 28)
 
-    screen = pygame.display.set_mode(size, pygame.RESIZABLE)
+    http_session = requests.Session()
+
+    imgBackground = pygame.image.load('static/background.png')
+    imgSeat = pygame.image.load('static/seat.png')
+    imgButton = pygame.image.load('static/button.png')
+    imgCardSmallFront = pygame.image.load('static/card-small-front.png')
+    imgCardSmallBack = pygame.image.load('static/card-small-back.png')
+    imgCardBigFront = pygame.image.load('static/card-big-front.png')
+    imgActionButton = pygame.image.load('static/action-button.png')
+    imgBetSlider = pygame.image.load('static/bet-slider.png')
+    imgSlider = pygame.image.load('static/slider.png')
+
+    sliderMin = 970
+    sliderMax = 1380
+    sliderPos = 970
+    sliderValue = 0
+
+    canvasSize = (1440, 810)
+    screen = pygame.display.set_mode(canvasSize, pygame.RESIZABLE)
     pygame.display.set_caption("Public-exchange.com")
 
     terminated = False
@@ -37,184 +47,212 @@ def tableMain(tableId):
     canFold = False
     canCall = False
     canCheck = False
+    canRaise = False
     t = 0
     while not terminated:
         screen.fill(0)
+        support.center_blit(screen, imgBackground, (canvasSize[0] / 2, canvasSize[1] / 2))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminated = True
             if event.type == MOUSEBUTTONUP:
                 if event.button == 1:
-                    fold_rect = pygame.Rect(6,720,240,80)
+                    fold_rect = pygame.Rect(6, 720, 240, 80)
                     if fold_rect.collidepoint(pygame.mouse.get_pos()) and canFold:
-                        ses.get(f'http://{support.host}/poker/actionFold/{tableId}/', params={'key': support.key})
+                        http_session.get(f'http://{support.host}/poker/actionFold/{tableId}/', params={'key': support.key})
                         print('Fold')
                     if fold_rect.collidepoint(pygame.mouse.get_pos()) and canCheck:
-                        ses.get(f'http://{support.host}/poker/actionCheck/{tableId}/', params={'key': support.key})
+                        http_session.get(f'http://{support.host}/poker/actionCheck/{tableId}/', params={'key': support.key})
                         print('Check')
                     call_rect = pygame.Rect(256, 720, 240, 80)
                     if call_rect.collidepoint(pygame.mouse.get_pos()) and canCall:
-                        ses.get(f'http://{support.host}/poker/actionCall/{tableId}/', params={'key': support.key})
+                        http_session.get(f'http://{support.host}/poker/actionCall/{tableId}/', params={'key': support.key})
                         print('Call')
+                    raise_rect = pygame.Rect(506, 720, 240, 80)
+                    if raise_rect.collidepoint(pygame.mouse.get_pos()) and canRaise:
+                        #http_session.get(f'http://{support.host}/poker/actionRaise/{tableId}/', params={'key': support.key})
+                        print('Raise')
+                    slider_rect = pygame.Rect(sliderMin, 720, sliderMax-sliderMin, 80)
+                    if slider_rect.collidepoint(pygame.mouse.get_pos()) and canRaise:
+                        x, y = pygame.mouse.get_pos()
+                        sliderPos = x
+                        print('slide')
 
-        support.center_blit(screen, background, (size[0] / 2, size[1] / 2))
-
+        # Get actual table state
         if t == 0:
-            result = ses.get(f'http://{support.host}/poker/tableState/{tableId}/', params={'key': support.key})
+            result = http_session.get(f'http://{support.host}/poker/tableState/{tableId}/', params={'key': support.key})
             result = result.json()
 
-        center = int(size[0] / 2), int(size[1] / 2) - 40
-        dist = 450
+        # Raytrace seat positions
+        tableCenter = int(canvasSize[0] / 2), int(canvasSize[1] / 2) - 40
+        sweepRange = 450
 
-        seatPositions = []
-        buttonPositions = []
-        moneyPositions = []
-        seats = result['nrOfSeats']
-        org = (center[0], center[1] + dist)
+        seatPositions = [None]
+        buttonPositions = [None]
+        moneyPositions = [None]
 
-        for i in range(0, seats):
-            r = (360/seats)*i
-            w = support.rotate(center, org, r)
-            w[0] = ((w[0] - center[0]) * aspect) + center[0]
-            points = support.get_line(center[0], center[1], int(w[0]), int(w[1]))
-            for j in range(0, len(points)):
-                c = background.get_at(points[j])
-                if c == (128, 128, 128, 255):
-                    seatPositions.append(points[j])
-                    buttonPositions.append(points[int(j * 0.8)])
-                    moneyPositions.append(points[int(j * 0.5)])
+        nrOfSeats = result['nrOfSeats']
+        firstRay = (tableCenter[0], tableCenter[1] + sweepRange)
+        aspect = canvasSize[0] / canvasSize[1]
+
+        for i in range(1, nrOfSeats+1):
+            angle = (360 / nrOfSeats) * (i - 1)
+            newRay = support.rotate(tableCenter, firstRay, angle)
+
+            # Do some aspect ratio stretching
+            newRay[0] = ((newRay[0] - tableCenter[0]) * aspect) + tableCenter[0]
+
+            # Get all the points from the center of the table to
+            rayPoints = support.get_line(tableCenter[0], tableCenter[1], int(newRay[0]), int(newRay[1]))
+            for j in range(0, len(rayPoints)):
+                if imgBackground.get_at(rayPoints[j]) == tableRingColor:
+                    seatPositions.append(rayPoints[j])
+                    buttonPositions.append(rayPoints[int(j * 0.8)])
+                    moneyPositions.append(rayPoints[int(j * 0.5)])
                     break
 
-        for i in range(0, seats):
-            seatp = seatPositions[i]
-            support.center_blit(screen, seat, seatp)
+        # Paint in the seats
+        for i in range(1, nrOfSeats+1):
+            seatPosition = seatPositions[i]
+            support.center_blit(screen, imgSeat, seatPosition)
 
             if result['players'][i] is not None:
                 if result['players'][i]['cards'] is not None:
                     if result['players'][i]['cards'] == '':
-                        support.center_blit(screen, cardSmallBack, (seatp[0] - 20, seatp[1] - 54))
-                        support.center_blit(screen, cardSmallBack, (seatp[0] + 20, seatp[1] - 54))
+                        support.center_blit(screen, imgCardSmallBack, (seatPosition[0] - 20, seatPosition[1] - 54))
+                        support.center_blit(screen, imgCardSmallBack, (seatPosition[0] + 20, seatPosition[1] - 54))
                     else:
                         c1 = result['players'][i]['cards'][0]
                         s1 = result['players'][i]['cards'][1]
                         c2 = result['players'][i]['cards'][2]
                         s2 = result['players'][i]['cards'][3]
 
-                        if s1 in ['♠','♣']:
-                            color1 = (0,0,0)
+                        if s1 in 'SC':
+                            color1 = black
                         else:
-                            color1 = (255,0,0)
+                            color1 = red
 
-                        if s2 in ['♠','♣']:
-                            color2 = (0,0,0)
+                        if s2 in 'SC':
+                            color2 = black
                         else:
-                            color2 = (255,0,0)
+                            color2 = red
 
-                        support.center_blit(screen, cardSmallFront, (seatp[0] - 20, seatp[1] - 54))
+                        support.center_blit(screen, imgCardSmallFront, (seatPosition[0] - 20, seatPosition[1] - 54))
 
-                        card1 = myfont.render(c1, True, color1)
-                        support.center_blit(screen, card1, (seatp[0] - 21, seatp[1] - 66))
+                        card1 = playerCardFont.render(c1, True, color1)
+                        support.center_blit(screen, card1, (seatPosition[0] - 21, seatPosition[1] - 67))
 
-                        suit1 = myfont.render(s1, True, color1)
-                        support.center_blit(screen, suit1, (seatp[0] - 20, seatp[1] - 41))
+                        suit1 = playerCardFont.render(support.suitTranslate(s1), True, color1)
+                        support.center_blit(screen, suit1, (seatPosition[0] - 20, seatPosition[1] - 40))
 
-                        support.center_blit(screen, cardSmallFront, (seatp[0] + 20, seatp[1] - 54))
+                        support.center_blit(screen, imgCardSmallFront, (seatPosition[0] + 20, seatPosition[1] - 54))
 
-                        card2 = myfont.render(c2, True, color2)
-                        support.center_blit(screen, card2, (seatp[0] + 19, seatp[1] - 66))
+                        card2 = playerCardFont.render(c2, True, color2)
+                        support.center_blit(screen, card2, (seatPosition[0] + 19, seatPosition[1] - 67))
 
-                        suit2 = myfont.render(s2, True, color2)
-                        support.center_blit(screen, suit2, (seatp[0] + 20, seatp[1] - 41))
+                        suit2 = playerCardFont.render(support.suitTranslate(s2), True, color2)
+                        support.center_blit(screen, suit2, (seatPosition[0] + 20, seatPosition[1] - 40))
 
                 if result['dealer'] == i+1:
                     buttonp = buttonPositions[i]
-                    support.center_blit(screen, button, buttonp)
+                    support.center_blit(screen, imgButton, buttonp)
 
-                color = (192,192,192)
+                color = white
                 if i+1 == result['next_to_act']:
-                    color = (192,0,0)
+                    color = red
 
                 txt = result['players'][i]['name']
-                name = myfont2.render(txt, True, color)
-                support.center_blit(screen, name, (seatp[0] + 0, seatp[1] - 13))
+                name = playerInfoFont.render(txt, True, color)
+                support.center_blit(screen, name, (seatPosition[0] + 0, seatPosition[1] - 13))
 
-                money = myfont2.render(result['players'][i]['balance'], True, color)
-                support.center_blit(screen, money, (seatp[0] + 0, seatp[1] + 12))
+                money = playerInfoFont.render(result['players'][i]['balance'], True, color)
+                support.center_blit(screen, money, (seatPosition[0] + 0, seatPosition[1] + 12))
 
                 if float(result['players'][i]['last_bet']) != 0:
-                    bet = myfont2.render(result['players'][i]['last_bet'], True, (192,192,192))
+                    bet = playerInfoFont.render(result['players'][i]['last_bet'], True, white)
                     support.center_blit(screen, bet, moneyPositions[i])
 
             else:
-                name = myfont2.render('Empty seat', True, (192,192,192))
-                support.center_blit(screen, name, (seatp[0] + 0, seatp[1] - 13))
+                name = playerInfoFont.render('Empty seat', True, white)
+                support.center_blit(screen, name, (seatPosition[0] + 0, seatPosition[1] - 13))
 
 
         for j in range(0, len(result['board']), 2):
             card = result['board'][j]
             suit = result['board'][j+1]
 
-            if suit in ['♠', '♣']:
+            if suit in 'SC':
                 color = (0, 0, 0)
             else:
                 color = (255, 0, 0)
 
             i = j / 2
-            support.center_blit(screen, cardBigFront, (center[0] + (i * 65) - 130, center[1] - 25))
+            support.center_blit(screen, imgCardBigFront, (tableCenter[0] + (i * 65) - 130, tableCenter[1] - 25))
 
-            card2 = myfont3.render(card, True, color)
-            support.center_blit(screen, card2, (center[0] + (i * 65) - 131, center[1] - 16 - 25))
+            card2 = boardCardFont.render(card, True, color)
+            support.center_blit(screen, card2, (tableCenter[0] + (i * 65) - 131, tableCenter[1] - 16 - 25))
 
-            suit2 = myfont3.render(suit, True, color)
-            support.center_blit(screen, suit2, (center[0] + (i * 65) - 130, center[1] + 18 - 25))
+            suit2 = boardCardFont.render(support.suitTranslate(suit), True, color)
+            support.center_blit(screen, suit2, (tableCenter[0] + (i * 65) - 130, tableCenter[1] + 18 - 25))
 
 
         pot = result['pot']
-        bet = myfont2.render(f'Total pot: {pot}', True, (192,192,192))
-        support.center_blit(screen, bet, (center[0], center[1] + 75 - 25))
+        bet = playerInfoFont.render(f'Total pot: {pot}', True, white)
+        support.center_blit(screen, bet, (tableCenter[0], tableCenter[1] + 75 - 25))
 
         # Actions
         actor = result['next_to_act']
-        if result['players'][actor-1]['name'] == result['you']:
+        if result['players'][actor]['name'] == result['you']:
 
-            canFold=False
+            canFold = False
             if 'FOLD' in result['actions']:
-                canFold=True
-                support.center_blit(screen, actionButton, (125, 760))
-                fold_button = myfont4.render('FOLD', True, (192,192,192))
+                canFold = True
+                support.center_blit(screen, imgActionButton, (125, 760))
+                fold_button = actionButtonFont.render('FOLD', True, white)
                 support.center_blit(screen, fold_button, (125, 760))
 
-            canCheck=False
+            canCheck = False
             if 'CHECK' in result['actions']:
-                canCheck=True
-                support.center_blit(screen, actionButton, (125, 760))
-                fold_button = myfont4.render('Check', True, (192,192,192))
+                canCheck = True
+                support.center_blit(screen, imgActionButton, (125, 760))
+                fold_button = actionButtonFont.render('Check', True, white)
                 support.center_blit(screen, fold_button, (125, 760))
 
             if 'CALL' in result['actions']:
-                canCall=True
-                support.center_blit(screen, actionButton, (375, 760))
-                call_button = myfont4.render('CALL', True, (192,192,192))
+                canCall = True
+                support.center_blit(screen, imgActionButton, (375, 760))
+                call_button = actionButtonFont.render('CALL', True, white)
                 support.center_blit(screen, call_button, (375, 760))
 
+            canRaise = False
             if 'RAISE' in result['actions']:
-                support.center_blit(screen, actionButton, (625, 760))
-                raise_button = myfont4.render('RAISE', True, (192,192,192))
+                canRaise = True
+                support.center_blit(screen, imgActionButton, (625, 760))
+                raise_button = actionButtonFont.render('RAISE', True, white)
+                support.center_blit(screen, raise_button, (625, 760))
+
+            if 'BET' in result['actions']:
+                canRaise = True
+                support.center_blit(screen, imgActionButton, (625, 760))
+                raise_button = actionButtonFont.render('BET', True, white)
                 support.center_blit(screen, raise_button, (625, 760))
 
             if 'BET' in result['actions'] or 'RAISE' in result['actions']:
-                support.center_blit(screen, betSlider, (1095, 760))
-                raise_m = myfont4.render('10', True, (192,192,192))
+                sliderValue = support.translate(sliderPos, sliderMin, sliderMax, float(result['blind'])/2, float(result['players'][actor]['balance']))
+                sliderValue = round(sliderValue, 2)
+
+                support.center_blit(screen, imgBetSlider, (1095, 760))
+                raise_m = actionButtonFont.render(str(sliderValue), True, white)
                 support.center_blit(screen, raise_m, (845, 760))
 
-                support.center_blit(screen, slider, (1000, 763))
+                support.center_blit(screen, imgSlider, (sliderPos, 763))
 
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(30)
 
         t += 1
-        if t > 30:
+        if t > 15:
             t = 0
 
     pygame.quit()

@@ -3,6 +3,7 @@ import math
 key = '507a2881-2c1f-4b86-b250-56b0c05932ce'
 host = '10.0.0.2:8000'
 
+
 def rotate(origin, point, angle):
     angle = math.radians(angle)
     """
@@ -81,3 +82,13 @@ def translate(value, fromBegin, fromEnd, toBegin, toEnd):
     valueScaled = float(value - fromBegin) / float(leftSpan)
 
     return toBegin + (valueScaled * rightSpan)
+
+def suitTranslate(s):
+    if s == 'C':
+        return '♠'
+    if s == 'H':
+        return '♥'
+    if s == 'D':
+        return '♦'
+    if s == 'S':
+        return '♣'
