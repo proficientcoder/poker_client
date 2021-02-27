@@ -42,12 +42,17 @@ def tableMain(tableId):
     pygame.display.set_caption("Public-exchange.com")
 
     terminated = False
+    mySeat = None
+    emptySeat = None
     clock = pygame.time.Clock()
 
     canFold = False
     canCall = False
     canCheck = False
     canRaise = False
+    canLeave = False
+    canJoin = False
+
     t = 0
     while not terminated:
         screen.fill(0)
@@ -63,16 +68,27 @@ def tableMain(tableId):
                         http_session.get(f'http://{support.host}/poker/actionFold/{tableId}/', params={'key': support.key})
                     if fold_rect.collidepoint(pygame.mouse.get_pos()) and canCheck:
                         http_session.get(f'http://{support.host}/poker/actionCheck/{tableId}/', params={'key': support.key})
+
                     call_rect = pygame.Rect(256, 720, 240, 80)
                     if call_rect.collidepoint(pygame.mouse.get_pos()) and canCall:
                         http_session.get(f'http://{support.host}/poker/actionCall/{tableId}/', params={'key': support.key})
+
                     raise_rect = pygame.Rect(506, 720, 240, 80)
                     if raise_rect.collidepoint(pygame.mouse.get_pos()) and canRaise:
                         http_session.get(f'http://{support.host}/poker/actionRaise/{tableId}/', params={'key': support.key, 'bet': sliderValue})
+
                     slider_rect = pygame.Rect(sliderMin, 720, sliderMax-sliderMin, 80)
                     if slider_rect.collidepoint(pygame.mouse.get_pos()) and canRaise:
                         x, y = pygame.mouse.get_pos()
                         sliderPos = x
+
+                    join_rect = pygame.Rect(1197, 11, 240, 80)
+                    if join_rect.collidepoint(pygame.mouse.get_pos()) and canJoin:
+                        http_session.get(f'http://{support.host}/poker/tableJoin/{tableId}/',
+                                                  params={'key': support.key})
+                    if join_rect.collidepoint(pygame.mouse.get_pos()) and canLeave:
+                        http_session.get(f'http://{support.host}/poker/tableLeave/{tableId}/',
+                                                  params={'key': support.key})
 
         # Get actual table state
         if t == 0:
@@ -109,12 +125,15 @@ def tableMain(tableId):
 
         # Paint in the seats
         totalPot = float(result['pot'])
+        mySeat = None
 
         for i in range(1, nrOfSeats+1):
             seatPosition = seatPositions[i]
             support.center_blit(screen, imgSeat, seatPosition)
 
             if result['players'][i] is not None:
+                if result['players'][i]['name'] == result['you']:
+                    mySeat = i
                 if result['players'][i]['cards'] is not None:
                     if result['players'][i]['cards'] == '':
                         support.center_blit(screen, imgCardSmallBack, (seatPosition[0] - 20, seatPosition[1] - 54))
@@ -151,7 +170,7 @@ def tableMain(tableId):
                         suit2 = playerCardFont.render(support.suitTranslate(s2), True, color2)
                         support.center_blit(screen, suit2, (seatPosition[0] + 20, seatPosition[1] - 40))
 
-                if result['dealer'] == i+1:
+                if result['dealer'] == i:
                     buttonp = buttonPositions[i]
                     support.center_blit(screen, imgButton, buttonp)
 
@@ -173,6 +192,7 @@ def tableMain(tableId):
                     support.center_blit(screen, bet, moneyPositions[i])
 
             else:
+                emptySeat = i
                 name = playerInfoFont.render('Empty seat', True, white)
                 support.center_blit(screen, name, (seatPosition[0] + 0, seatPosition[1] - 13))
 
@@ -200,50 +220,66 @@ def tableMain(tableId):
 
         # Actions
         actor = result['next_to_act']
-        if result['players'][actor]['name'] == result['you']:
+        if result['players'][actor]:
+            if result['players'][actor]['name'] == result['you']:
 
-            canFold = False
-            if 'FOLD' in result['actions']:
-                canFold = True
-                support.center_blit(screen, imgActionButton, (125, 760))
-                fold_button = actionButtonFont.render('FOLD', True, white)
-                support.center_blit(screen, fold_button, (125, 760))
+                canFold = False
+                if 'FOLD' in result['actions']:
+                    canFold = True
+                    support.center_blit(screen, imgActionButton, (125, 760))
+                    fold_button = actionButtonFont.render('FOLD', True, white)
+                    support.center_blit(screen, fold_button, (125, 760))
 
-            canCheck = False
-            if 'CHECK' in result['actions']:
-                canCheck = True
-                support.center_blit(screen, imgActionButton, (125, 760))
-                fold_button = actionButtonFont.render('Check', True, white)
-                support.center_blit(screen, fold_button, (125, 760))
+                canCheck = False
+                if 'CHECK' in result['actions']:
+                    canCheck = True
+                    support.center_blit(screen, imgActionButton, (125, 760))
+                    fold_button = actionButtonFont.render('Check', True, white)
+                    support.center_blit(screen, fold_button, (125, 760))
 
-            if 'CALL' in result['actions']:
-                canCall = True
-                support.center_blit(screen, imgActionButton, (375, 760))
-                call_button = actionButtonFont.render('CALL', True, white)
-                support.center_blit(screen, call_button, (375, 760))
+                if 'CALL' in result['actions']:
+                    canCall = True
+                    support.center_blit(screen, imgActionButton, (375, 760))
+                    call_button = actionButtonFont.render('CALL', True, white)
+                    support.center_blit(screen, call_button, (375, 760))
 
-            canRaise = False
-            if 'RAISE' in result['actions']:
-                canRaise = True
-                support.center_blit(screen, imgActionButton, (625, 760))
-                raise_button = actionButtonFont.render('RAISE', True, white)
-                support.center_blit(screen, raise_button, (625, 760))
+                canRaise = False
+                if 'RAISE' in result['actions']:
+                    canRaise = True
+                    support.center_blit(screen, imgActionButton, (625, 760))
+                    raise_button = actionButtonFont.render('RAISE', True, white)
+                    support.center_blit(screen, raise_button, (625, 760))
 
-            if 'BET' in result['actions']:
-                canRaise = True
-                support.center_blit(screen, imgActionButton, (625, 760))
-                raise_button = actionButtonFont.render('BET', True, white)
-                support.center_blit(screen, raise_button, (625, 760))
+                if 'BET' in result['actions']:
+                    canRaise = True
+                    support.center_blit(screen, imgActionButton, (625, 760))
+                    raise_button = actionButtonFont.render('BET', True, white)
+                    support.center_blit(screen, raise_button, (625, 760))
 
-            if 'BET' in result['actions'] or 'RAISE' in result['actions']:
-                sliderValue = support.translate(sliderPos, sliderMin, sliderMax, float(result['blind'])/2, float(result['players'][actor]['balance']))
-                sliderValue = round(sliderValue, 1)
+                if 'BET' in result['actions'] or 'RAISE' in result['actions']:
+                    sliderValue = support.translate(sliderPos, sliderMin, sliderMax, float(result['blind'])/2, float(result['players'][actor]['balance']))
+                    sliderValue = round(sliderValue, 1)
 
-                support.center_blit(screen, imgBetSlider, (1095, 760))
-                raise_m = actionButtonFont.render(str(sliderValue), True, white)
-                support.center_blit(screen, raise_m, (845, 760))
+                    support.center_blit(screen, imgBetSlider, (1095, 760))
+                    raise_m = actionButtonFont.render(str(sliderValue), True, white)
+                    support.center_blit(screen, raise_m, (845, 760))
 
-                support.center_blit(screen, imgSlider, (sliderPos, 763))
+                    support.center_blit(screen, imgSlider, (sliderPos, 763))
+
+        canLeave = False
+        if mySeat:
+            canLeave = True
+            support.center_blit(screen, imgActionButton, (1315, 50))
+            fold_button = actionButtonFont.render('LEAVE', True, white)
+            support.center_blit(screen, fold_button, (1315, 50))
+
+        canJoin = False
+        if not mySeat and emptySeat:
+            canJoin = True
+            support.center_blit(screen, imgActionButton, (1315, 50))
+            fold_button = actionButtonFont.render('JOIN', True, white)
+            support.center_blit(screen, fold_button, (1315, 50))
+
 
         pygame.display.flip()
         clock.tick(30)
