@@ -65,17 +65,17 @@ def tableMain(tableId):
                 if event.button == 1:
                     fold_rect = pygame.Rect(6, 720, 240, 80)
                     if fold_rect.collidepoint(pygame.mouse.get_pos()) and canFold:
-                        http_session.get(f'http://{support.host}/poker/actionFold/{tableId}/', params={'key': support.key})
+                        http_session.get(f'{support.host}/poker/actionFold/{tableId}/', params={'key': support.key})
                     if fold_rect.collidepoint(pygame.mouse.get_pos()) and canCheck:
-                        http_session.get(f'http://{support.host}/poker/actionCheck/{tableId}/', params={'key': support.key})
+                        http_session.get(f'{support.host}/poker/actionCheck/{tableId}/', params={'key': support.key})
 
                     call_rect = pygame.Rect(256, 720, 240, 80)
                     if call_rect.collidepoint(pygame.mouse.get_pos()) and canCall:
-                        http_session.get(f'http://{support.host}/poker/actionCall/{tableId}/', params={'key': support.key})
+                        http_session.get(f'{support.host}/poker/actionCall/{tableId}/', params={'key': support.key})
 
                     raise_rect = pygame.Rect(506, 720, 240, 80)
                     if raise_rect.collidepoint(pygame.mouse.get_pos()) and canRaise:
-                        http_session.get(f'http://{support.host}/poker/actionRaise/{tableId}/', params={'key': support.key, 'bet': sliderValue})
+                        http_session.get(f'{support.host}/poker/actionRaise/{tableId}/', params={'key': support.key, 'bet': sliderValue})
 
                     slider_rect = pygame.Rect(sliderMin, 720, sliderMax-sliderMin, 80)
                     if slider_rect.collidepoint(pygame.mouse.get_pos()) and canRaise:
@@ -84,15 +84,17 @@ def tableMain(tableId):
 
                     join_rect = pygame.Rect(1197, 11, 240, 80)
                     if join_rect.collidepoint(pygame.mouse.get_pos()) and canJoin:
-                        http_session.get(f'http://{support.host}/poker/tableJoin/{tableId}/',
+                        http_session.get(f'{support.host}/poker/tableJoin/{tableId}/',
                                                   params={'key': support.key})
+                        exit()
                     if join_rect.collidepoint(pygame.mouse.get_pos()) and canLeave:
-                        http_session.get(f'http://{support.host}/poker/tableLeave/{tableId}/',
+                        http_session.get(f'{support.host}/poker/tableLeave/{tableId}/',
                                                   params={'key': support.key})
+                        exit()
 
         # Get actual table state
         if t == 0:
-            result = http_session.get(f'http://{support.host}/poker/tableState/{tableId}/', params={'key': support.key})
+            result = http_session.get(f'{support.host}/poker/tableState/{tableId}/', params={'key': support.key})
             result = result.json()
 
         # Raytrace seat positions
@@ -199,24 +201,24 @@ def tableMain(tableId):
         pot = playerInfoFont.render(f'Total pot: {totalPot}', True, white)
         support.center_blit(screen, pot, (tableCenter[0], tableCenter[1] + 75 - 25))
 
+        if result['board']:
+            for j in range(0, len(result['board']), 2):
+                card = result['board'][j]
+                suit = result['board'][j+1]
 
-        for j in range(0, len(result['board']), 2):
-            card = result['board'][j]
-            suit = result['board'][j+1]
+                if suit in 'SC':
+                    color = (0, 0, 0)
+                else:
+                    color = (255, 0, 0)
 
-            if suit in 'SC':
-                color = (0, 0, 0)
-            else:
-                color = (255, 0, 0)
+                i = j / 2
+                support.center_blit(screen, imgCardBigFront, (tableCenter[0] + (i * 65) - 130, tableCenter[1] - 25))
 
-            i = j / 2
-            support.center_blit(screen, imgCardBigFront, (tableCenter[0] + (i * 65) - 130, tableCenter[1] - 25))
+                card2 = boardCardFont.render(card, True, color)
+                support.center_blit(screen, card2, (tableCenter[0] + (i * 65) - 131, tableCenter[1] - 16 - 25))
 
-            card2 = boardCardFont.render(card, True, color)
-            support.center_blit(screen, card2, (tableCenter[0] + (i * 65) - 131, tableCenter[1] - 16 - 25))
-
-            suit2 = boardCardFont.render(support.suitTranslate(suit), True, color)
-            support.center_blit(screen, suit2, (tableCenter[0] + (i * 65) - 130, tableCenter[1] + 18 - 25))
+                suit2 = boardCardFont.render(support.suitTranslate(suit), True, color)
+                support.center_blit(screen, suit2, (tableCenter[0] + (i * 65) - 130, tableCenter[1] + 18 - 25))
 
         # Actions
         actor = result['next_to_act']

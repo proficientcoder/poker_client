@@ -1,7 +1,26 @@
+import os
 import math
+import requests
+import json
 
-key = '507a2881-2c1f-4b86-b250-56b0c05932ce'
-host = '10.0.0.2:8000'
+with open('key.txt', 'r') as f:
+    cfg = json.load(f)
+
+if os.getenv("DEVELOPMENT_MODE", "False") == "True":
+    key = cfg['development']
+    host = 'http://127.0.0.1:8000'
+else:
+    key = cfg['production']
+    host = 'https://public-exchange.com'
+
+
+def test_key():
+    res = requests.get(f'{host}/user/testKey/', params={'key': key})
+    res = res.json()
+    if 'username' in res:
+        return res['username']
+    else:
+        return False
 
 
 def rotate(origin, point, angle):
