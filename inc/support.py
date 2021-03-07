@@ -3,7 +3,7 @@ import math
 import requests
 import json
 
-with open('key.txt', 'r') as f:
+with open('..\key.txt', 'r') as f:
     cfg = json.load(f)
 
 if os.getenv("DEVELOPMENT_MODE", "False") == "True":
@@ -18,7 +18,8 @@ def test_key():
     res = requests.get(f'{host}/user/testKey/', params={'key': key})
     res = res.json()
     if 'username' in res:
-        return res['username']
+        cfg['username'] = res['username']
+        return True
     else:
         return False
 

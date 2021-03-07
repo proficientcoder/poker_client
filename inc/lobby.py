@@ -22,17 +22,18 @@ def lobbyMain():
 
     ses = requests.Session()
 
-    size = (1440, 810)
-    screen = pygame.display.set_mode(size, pygame.RESIZABLE)
-    pygame.display.set_caption("Public-exchange.com")
-
-    terminated = False
-    clock = pygame.time.Clock()
-
     if support.test_key():
         key_color = (0,255,0)
     else:
         key_color = (255,0,0)
+
+    size = (1440, 810)
+    screen = pygame.display.set_mode(size, pygame.RESIZABLE)
+    username = support.cfg['username']
+    pygame.display.set_caption(f'Username {username} - Lobby - Holdem poker on public-exchange.com')
+
+    terminated = False
+    clock = pygame.time.Clock()
 
     rows = []
     selected = None
@@ -69,7 +70,7 @@ def lobbyMain():
                             support.cfg['development'] = support.key
                         else:
                             support.cfg['production'] = support.key
-                        with open('key.txt', 'w') as f:
+                        with open('..\key.txt', 'w') as f:
                             json.dump(support.cfg, f)
                         if support.test_key():
                             key_color = (0, 255, 0)
