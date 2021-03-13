@@ -10,8 +10,8 @@ import inc.support as support
 if __name__ == '__main__':
     tables = []
 
-    # lobby = Process(target=lobbyMain, args=())
-    # lobby.start()
+    lobby = Process(target=lobbyMain, args=())
+    lobby.start()
 
     # while True:
     #     time.sleep(5)

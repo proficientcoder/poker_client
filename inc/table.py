@@ -10,6 +10,7 @@ def tableMain(tableId):
     pygame.font.init()
 
     white = (255, 255, 255)
+    grey = (127, 127, 127)
     black = (0, 0, 0)
     red = (255, 0, 0)
 
@@ -222,6 +223,19 @@ def tableMain(tableId):
 
                 suit2 = boardCardFont.render(support.suitTranslate(suit), True, color)
                 support.center_blit(screen, suit2, (tableCenter[0] + (i * 65) - 130, tableCenter[1] + 18 - 25))
+
+        # Timer
+        if 'timer' in result:   # and result['actions']:
+            tmr = int(result['timer'])
+            tmr = playerInfoFont.render(f'Timeout in: {tmr}', True, white)
+            screen.blit(tmr, (0, 0))
+
+        # Log
+        y = 20
+        for l in result['log']:
+            y += 20
+            tmr = playerInfoFont.render(l, True, grey)
+            screen.blit(tmr, (0, y))
 
         # Actions
         actor = result['next_to_act']
