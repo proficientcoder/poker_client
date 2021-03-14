@@ -21,6 +21,7 @@ def test_key():
         cfg['username'] = res['username']
         return True
     else:
+        cfg['username'] = None
         return False
 
 
