@@ -3,9 +3,44 @@ import requests
 from pygame.constants import MOUSEBUTTONUP
 
 import inc.support as support
+from inc.pygameforms import pygameButton
+from inc.pygameforms import pygameTextField
+from inc.pygameforms import pygameSlider
 
 
-def tableMain(tableId):
+http_session = requests.Session()
+tableId = None
+sliderValue = None
+
+
+def callbackFoldButton():
+    http_session.get(f'{support.host}/poker/actionFold/{tableId}/', params={'key': support.key})
+
+def callbackCheckButton():
+    http_session.get(f'{support.host}/poker/actionCheck/{tableId}/', params={'key': support.key})
+
+def callbackCallButton():
+    http_session.get(f'{support.host}/poker/actionCall/{tableId}/', params={'key': support.key})
+
+def callbackBetButton():
+    http_session.get(f'{support.host}/poker/actionRaise/{tableId}/{sliderValue}/', params={'key': support.key})
+
+def callbackRaiseButton():
+    http_session.get(f'{support.host}/poker/actionRaise/{tableId}/{sliderValue}/', params={'key': support.key})
+
+def callbackLeaveButton():
+    http_session.get(f'{support.host}/poker/tableLeave/{tableId}/', params={'key': support.key})
+
+def callbackJoinButton():
+    http_session.get(f'{support.host}/poker/tableJoin/{tableId}/40/', params={'key': support.key})
+    exit()
+
+
+def tableMain(myTableId):
+    global tableId, sliderValue
+
+    tableId = myTableId
+
     pygame.init()
     pygame.font.init()
 
@@ -19,9 +54,6 @@ def tableMain(tableId):
     playerCardFont = pygame.font.SysFont('arial', 36)
     playerInfoFont = pygame.font.SysFont('arial', 20)
     boardCardFont = pygame.font.SysFont('arial', 56)
-    actionButtonFont = pygame.font.SysFont('arial', 28)
-
-    http_session = requests.Session()
 
     imgBackground = pygame.image.load('static/background.png')
     imgSeat = pygame.image.load('static/seat.png')
@@ -29,27 +61,93 @@ def tableMain(tableId):
     imgCardSmallFront = pygame.image.load('static/card-small-front.png')
     imgCardSmallBack = pygame.image.load('static/card-small-back.png')
     imgCardBigFront = pygame.image.load('static/card-big-front.png')
-    imgActionButton = pygame.image.load('static/action-button.png')
-    imgBetSlider = pygame.image.load('static/bet-slider.png')
-    imgSlider = pygame.image.load('static/slider.png')
-
-    sliderMin = 970
-    sliderMax = 1380
-    sliderPos = 970
-    sliderValue = 0
 
     canvasSize = (1440, 810)
-    screen = pygame.display.set_mode(canvasSize, pygame.RESIZABLE)
-    pygame.display.set_caption("Public-exchange.com")
+    screen = pygame.display.set_mode(canvasSize)
+    pygame.display.set_caption("Public Exchange Poker")
 
     terminated = False
-    mySeat = None
     emptySeat = None
     clock = pygame.time.Clock()
+
+    joinButton = pygameButton((1190, 15),
+                               (240, 70),
+                               (64, 64, 64),
+                               (192, 192, 192),
+                               'JOIN',
+                               pygame.font.SysFont('arial', 26),
+                               callbackJoinButton)
+
+    leaveButton = pygameButton((1190, 15),
+                               (240, 70),
+                               (64, 64, 64),
+                               (192, 192, 192),
+                               'LEAVE',
+                               pygame.font.SysFont('arial', 26),
+                               callbackLeaveButton)
+
+    foldButton = pygameButton((5, 725),
+                              (240, 70),
+                              (64, 64, 64),
+                              (192, 192, 192),
+                              'FOLD',
+                              pygame.font.SysFont('arial', 26),
+                              callbackFoldButton)
+
+    checkButton = pygameButton((5, 725),
+                               (240, 70),
+                               (64, 64, 64),
+                               (192, 192, 192),
+                               'CHECK',
+                               pygame.font.SysFont('arial', 26),
+                               callbackCheckButton)
+
+    callButton = pygameButton((255, 725),
+                              (240, 70),
+                              (64, 64, 64),
+                              (192, 192, 192),
+                              'CALL',
+                              pygame.font.SysFont('arial', 26),
+                              callbackCallButton)
+
+    betButton = pygameButton((505, 725),
+                             (240, 70),
+                             (64, 64, 64),
+                             (192, 192, 192),
+                             'BET',
+                             pygame.font.SysFont('arial', 26),
+                             callbackBetButton)
+
+    raiseButton = pygameButton((505, 725),
+                               (240, 70),
+                               (64, 64, 64),
+                               (192, 192, 192),
+                               'RAISE',
+                               pygame.font.SysFont('arial', 26),
+                               callbackBetButton)
+
+    betSlider = pygameSlider((925, 720),
+                             (505, 80),
+                             (32, 32, 32),
+                             (96, 96, 96),
+                             (64, 64, 64),
+                             0,
+                             100,
+                             0)
+
+    seatSlider = pygameSlider((470, 5),
+                              (500, 30),
+                              (32, 32, 32),
+                              (96, 96, 96),
+                              (64, 64, 64),
+                              0,
+                              360,
+                              180)
 
     canFold = False
     canCall = False
     canCheck = False
+    canBet = False
     canRaise = False
     canLeave = False
     canJoin = False
@@ -57,41 +155,33 @@ def tableMain(tableId):
     t = 0
     while not terminated:
         screen.fill(0)
+
         support.center_blit(screen, imgBackground, (canvasSize[0] / 2, canvasSize[1] / 2))
 
-        for event in pygame.event.get():
+        sliderValue = int(betSlider.value)
+        allevents = pygame.event.get()
+
+        seatSlider.doEvents(allevents)
+        if canBet or canRaise:
+            betSlider.doEvents(allevents)
+        if canRaise:
+            raiseButton.doEvents(allevents)
+        if canBet:
+            betButton.doEvents(allevents)
+        if canCall:
+            callButton.doEvents(allevents)
+        if canCheck:
+            checkButton.doEvents(allevents)
+        if canFold:
+            foldButton.doEvents(allevents)
+        if canLeave:
+            leaveButton.doEvents(allevents)
+        if canJoin:
+            joinButton.doEvents(allevents)
+
+        for event in allevents:
             if event.type == pygame.QUIT:
                 terminated = True
-            if event.type == MOUSEBUTTONUP:
-                if event.button == 1:
-                    fold_rect = pygame.Rect(6, 720, 240, 80)
-                    if fold_rect.collidepoint(pygame.mouse.get_pos()) and canFold:
-                        http_session.get(f'{support.host}/poker/actionFold/{tableId}/', params={'key': support.key})
-                    if fold_rect.collidepoint(pygame.mouse.get_pos()) and canCheck:
-                        http_session.get(f'{support.host}/poker/actionCheck/{tableId}/', params={'key': support.key})
-
-                    call_rect = pygame.Rect(256, 720, 240, 80)
-                    if call_rect.collidepoint(pygame.mouse.get_pos()) and canCall:
-                        http_session.get(f'{support.host}/poker/actionCall/{tableId}/', params={'key': support.key})
-
-                    raise_rect = pygame.Rect(506, 720, 240, 80)
-                    if raise_rect.collidepoint(pygame.mouse.get_pos()) and canRaise:
-                        http_session.get(f'{support.host}/poker/actionRaise/{tableId}/{sliderValue}/', params={'key': support.key})
-
-                    slider_rect = pygame.Rect(sliderMin, 720, sliderMax-sliderMin, 80)
-                    if slider_rect.collidepoint(pygame.mouse.get_pos()) and canRaise:
-                        x, y = pygame.mouse.get_pos()
-                        sliderPos = x
-
-                    join_rect = pygame.Rect(1197, 11, 240, 80)
-                    if join_rect.collidepoint(pygame.mouse.get_pos()) and canJoin:
-                        http_session.get(f'{support.host}/poker/tableJoin/{tableId}/',
-                                                  params={'key': support.key})
-                        exit()
-                    if join_rect.collidepoint(pygame.mouse.get_pos()) and canLeave:
-                        http_session.get(f'{support.host}/poker/tableLeave/{tableId}/',
-                                                  params={'key': support.key})
-                        exit()
 
         # Get actual table state
         if t == 0:
@@ -111,7 +201,7 @@ def tableMain(tableId):
         aspect = canvasSize[0] / canvasSize[1]
 
         for i in range(0, nrOfSeats):
-            angle = (360 / nrOfSeats) * (i - 1)
+            angle = (360 / nrOfSeats) * (i - 1) + seatSlider.value
             newRay = support.rotate(tableCenter, firstRay, angle)
 
             # Do some aspect ratio stretching
@@ -245,63 +335,58 @@ def tableMain(tableId):
                 canFold = False
                 if 'FOLD' in result['actions']:
                     canFold = True
-                    support.center_blit(screen, imgActionButton, (125, 760))
-                    fold_button = actionButtonFont.render('FOLD', True, white)
-                    support.center_blit(screen, fold_button, (125, 760))
 
                 canCheck = False
                 if 'CHECK' in result['actions']:
                     canCheck = True
-                    support.center_blit(screen, imgActionButton, (125, 760))
-                    fold_button = actionButtonFont.render('Check', True, white)
-                    support.center_blit(screen, fold_button, (125, 760))
 
+                canCall = False
                 if 'CALL' in result['actions']:
                     canCall = True
-                    support.center_blit(screen, imgActionButton, (375, 760))
-                    call_button = actionButtonFont.render('CALL', True, white)
-                    support.center_blit(screen, call_button, (375, 760))
 
                 canRaise = False
                 if 'RAISE' in result['actions']:
                     canRaise = True
-                    support.center_blit(screen, imgActionButton, (625, 760))
-                    raise_button = actionButtonFont.render('RAISE', True, white)
-                    support.center_blit(screen, raise_button, (625, 760))
 
+                canBet = False
                 if 'BET' in result['actions']:
-                    canRaise = True
-                    support.center_blit(screen, imgActionButton, (625, 760))
-                    raise_button = actionButtonFont.render('BET', True, white)
-                    support.center_blit(screen, raise_button, (625, 760))
+                    canBet = True
 
                 toCall = max_bet - int(result['players'][actor]['new_bet'])
                 minRaise = toCall + float(result['blind'])/2
                 minRaise = min(minRaise, result['players'][actor]['balance'])
-                if 'BET' in result['actions'] or 'RAISE' in result['actions']:
-                    sliderValue = support.translate(sliderPos, sliderMin, sliderMax, minRaise, float(result['players'][actor]['balance']))
-                    sliderValue = int(round(sliderValue, 0))
-
-                    support.center_blit(screen, imgBetSlider, (1095, 760))
-                    raise_m = actionButtonFont.render(str(sliderValue), True, white)
-                    support.center_blit(screen, raise_m, (845, 760))
-
-                    support.center_blit(screen, imgSlider, (sliderPos, 763))
+                betSlider.min = minRaise
+                betSlider.max = result['players'][actor]['balance']
 
         canLeave = False
         if mySeat:
             canLeave = True
-            support.center_blit(screen, imgActionButton, (1315, 50))
-            fold_button = actionButtonFont.render('LEAVE', True, white)
-            support.center_blit(screen, fold_button, (1315, 50))
 
         canJoin = False
         if not mySeat and emptySeat:
             canJoin = True
-            support.center_blit(screen, imgActionButton, (1315, 50))
-            fold_button = actionButtonFont.render('JOIN', True, white)
-            support.center_blit(screen, fold_button, (1315, 50))
 
+        if canJoin:
+            joinButton.draw(screen)
+        if canLeave:
+            leaveButton.draw(screen)
+        if canFold:
+            foldButton.draw(screen)
+        if canCheck:
+            checkButton.draw(screen)
+        if canCall:
+            callButton.draw(screen)
+        if canBet:
+            betButton.draw(screen)
+        if canRaise:
+            raiseButton.draw(screen)
+        if canRaise or canBet:
+            s = str(int(round(betSlider.value, 0)))
+            img_v = playerCardFont.render(s, True, white)
+            support.center_blit(screen, img_v, (845, 760))
+            betSlider.draw(screen)
+
+        seatSlider.draw(screen)
 
         pygame.display.flip()
         clock.tick(30)
