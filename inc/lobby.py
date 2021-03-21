@@ -112,7 +112,7 @@ def lobbyMain():
                               callbackViewButton)
 
     keyButton = pygameButton((15, 15),
-                             (120, 30),
+                             (160, 30),
                              (0,0,0),
                              key_color,
                              'PASTE KEY',
@@ -193,7 +193,7 @@ def lobbyMain():
 
         # Key
         key_txt = myfont3.render(support.key, True, key_color)
-        screen.blit(key_txt, (150, 15))
+        screen.blit(key_txt, (190, 15))
 
         # Dropdowns
         keyButton.draw(screen)
