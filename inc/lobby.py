@@ -50,9 +50,9 @@ def callbackKeyButton():
     with open('..\key.txt', 'w') as f:
         json.dump(support.cfg, f)
     if support.test_key():
-        key_color = (0, 255, 0)
+        key_color = (0, 192, 0)
     else:
-        key_color = (255, 0, 0)
+        key_color = (192, 0, 0)
 
 
 def lobbyMain():
@@ -111,13 +111,13 @@ def lobbyMain():
                               pygame.font.SysFont('arial', 26),
                               callbackViewButton)
 
-    keyButton = pygameButton((830, 75),
-                              (240, 50),
-                              (64, 64, 64),
-                              (192, 192, 192),
-                              'PASTE KEY',
-                              pygame.font.SysFont('arial', 26),
-                              callbackKeyButton)
+    keyButton = pygameButton((15, 15),
+                             (120, 30),
+                             (0,0,0),
+                             key_color,
+                             'PASTE KEY',
+                             pygame.font.SysFont('arial', 26),
+                             callbackKeyButton)
 
     size = (1440, 810)
     screen = pygame.display.set_mode(size)#, pygame.RESIZABLE)
@@ -159,11 +159,8 @@ def lobbyMain():
                             selected_table = trect[0]
 
         if t == 0:
-            if tableSize:
-                tables = ses.get(f'{support.host}/poker/listTables/{tableSize}/')
-                tables = tables.json()
-            else:
-                tables = {'tables': []}
+            tables = ses.get(f'{support.host}/poker/listTables/')
+            tables = tables.json()
 
         color1 = (192, 192, 192)
 
@@ -189,20 +186,21 @@ def lobbyMain():
             strImg = myfont3.render(s, True, color1)
             support.center_blit(screen, strImg, (145, y))
 
-            rows.append((r['id'],pygame.Rect(0, y-14, 720, 28)))
+            rows.append((r['id'], pygame.Rect(0, y-14, 720, 28)))
 
             if r['id'] == selected_table:
                 pygame.draw.rect(screen, (192, 0, 0), rows[-1][1], 1)
 
         # Key
-        fold_button = myfont3.render(support.key, True, key_color)
-        support.center_blit(screen, fold_button, (720, 30))
+        key_txt = myfont3.render(support.key, True, key_color)
+        screen.blit(key_txt, (150, 15))
 
         # Dropdowns
         keyButton.draw(screen)
         viewButton.draw(screen)
-        joinButton.draw(screen)
-        createButton.draw(screen)
+        if selected_table is not None:
+            joinButton.draw(screen)
+        #createButton.draw(screen)
         menubuyinSize.draw(screen)
         menuTableSize.draw(screen)
 

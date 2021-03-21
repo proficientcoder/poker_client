@@ -23,10 +23,14 @@ def callbackCallButton():
     http_session.get(f'{support.host}/poker/actionCall/{tableId}/', params={'key': support.key})
 
 def callbackBetButton():
-    http_session.get(f'{support.host}/poker/actionRaise/{tableId}/{sliderValue}/', params={'key': support.key})
+    _result = http_session.get(f'{support.host}/poker/actionRaise/{tableId}/{sliderValue}/', params={'key': support.key})
+    _result = _result.json()
+    print(_result)
 
 def callbackRaiseButton():
-    http_session.get(f'{support.host}/poker/actionRaise/{tableId}/{sliderValue}/', params={'key': support.key})
+    _result = http_session.get(f'{support.host}/poker/actionRaise/{tableId}/{sliderValue}/', params={'key': support.key})
+    _result = _result.json()
+    print(_result)
 
 def callbackLeaveButton():
     http_session.get(f'{support.host}/poker/tableLeave/{tableId}/', params={'key': support.key})
@@ -309,10 +313,10 @@ def tableMain(myTableId):
                 support.center_blit(screen, imgCardBigFront, (tableCenter[0] + (i * 65) - 130, tableCenter[1] - 25))
 
                 card2 = boardCardFont.render(card, True, color)
-                support.center_blit(screen, card2, (tableCenter[0] + (i * 65) - 131, tableCenter[1] - 16 - 25))
+                support.center_blit(screen, card2, (tableCenter[0] + (i * 65) - 131, tableCenter[1] - 17 - 25))
 
                 suit2 = boardCardFont.render(support.suitTranslate(suit), True, color)
-                support.center_blit(screen, suit2, (tableCenter[0] + (i * 65) - 130, tableCenter[1] + 18 - 25))
+                support.center_blit(screen, suit2, (tableCenter[0] + (i * 65) - 129, tableCenter[1] + 19 - 24))
 
         # Timer
         if 'timer' in result:   # and result['actions']:
