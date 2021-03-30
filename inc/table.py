@@ -11,6 +11,7 @@ from inc.pygameforms import pygameSlider
 http_session = requests.Session()
 tableId = None
 sliderValue = None
+bb = None
 
 
 def callbackFoldButton():
@@ -36,12 +37,12 @@ def callbackLeaveButton():
     http_session.get(f'{support.host}/poker/tableLeave/{tableId}/', params={'key': support.key})
 
 def callbackJoinButton():
-    http_session.get(f'{support.host}/poker/tableJoin/{tableId}/40/', params={'key': support.key})
+    http_session.get(f'{support.host}/poker/tableJoin/{tableId}/{bb}/', params={'key': support.key})
     exit()
 
 
 def tableMain(myTableId):
-    global tableId, sliderValue
+    global tableId, sliderValue, bb
 
     tableId = myTableId
 
@@ -74,15 +75,15 @@ def tableMain(myTableId):
     emptySeat = None
     clock = pygame.time.Clock()
 
-    joinButton = pygameButton((1190, 15),
-                               (240, 70),
-                               (64, 64, 64),
-                               (192, 192, 192),
-                               'JOIN',
-                               pygame.font.SysFont('arial', 26),
-                               callbackJoinButton)
+    joinButton = pygameButton((1190, 10),
+                              (240, 70),
+                              (64, 64, 64),
+                              (192, 192, 192),
+                              'JOIN',
+                              pygame.font.SysFont('arial', 26),
+                              callbackJoinButton)
 
-    leaveButton = pygameButton((1190, 15),
+    leaveButton = pygameButton((1190, 10),
                                (240, 70),
                                (64, 64, 64),
                                (192, 192, 192),
@@ -148,6 +149,15 @@ def tableMain(myTableId):
                               360,
                               180)
 
+    buyinSlider = pygameSlider((1190, 90),
+                               (240, 30),
+                               (32, 32, 32),
+                               (96, 96, 96),
+                               (64, 64, 64),
+                               40,
+                               100,
+                               40)
+
     canFold = False
     canCall = False
     canCheck = False
@@ -181,6 +191,7 @@ def tableMain(myTableId):
         if canLeave:
             leaveButton.doEvents(allevents)
         if canJoin:
+            buyinSlider.doEvents(allevents)
             joinButton.doEvents(allevents)
 
         for event in allevents:
@@ -333,26 +344,25 @@ def tableMain(myTableId):
 
         # Actions
         actor = result['next_to_act']
+        canFold = False
+        canCheck = False
+        canCall = False
+        canRaise = False
+        canBet = False
         if result['players'][actor]:
             if result['players'][actor]['name'] == result['you']:
-
-                canFold = False
                 if 'FOLD' in result['actions']:
                     canFold = True
 
-                canCheck = False
                 if 'CHECK' in result['actions']:
                     canCheck = True
 
-                canCall = False
                 if 'CALL' in result['actions']:
                     canCall = True
 
-                canRaise = False
                 if 'RAISE' in result['actions']:
                     canRaise = True
 
-                canBet = False
                 if 'BET' in result['actions']:
                     canBet = True
 
@@ -363,14 +373,17 @@ def tableMain(myTableId):
                 betSlider.max = result['players'][actor]['balance']
 
         canLeave = False
-        if mySeat:
+        if mySeat is not None:
             canLeave = True
 
         canJoin = False
-        if not mySeat and emptySeat:
+        if mySeat is None and emptySeat:
             canJoin = True
 
         if canJoin:
+            buyinSlider.draw(screen)
+            bb = int(buyinSlider.value)
+            joinButton.text = 'JOIN with ' + str(bb) + ' BB'
             joinButton.draw(screen)
         if canLeave:
             leaveButton.draw(screen)

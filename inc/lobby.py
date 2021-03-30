@@ -87,23 +87,23 @@ def lobbyMain():
         pygame.font.SysFont(None, 30),
         "40 big blind", ["40 big blind", "100 big blind"])
 
-    createButton = pygameButton((20, 75),
-                                (240, 50),
-                                (64, 64, 64),
-                                (192, 192, 192),
-                                'CREATE TABLE',
-                                pygame.font.SysFont('arial', 26),
-                                callbackCreateButton)
+    # createButton = pygameButton((20, 75),
+    #                             (240, 50),
+    #                             (64, 64, 64),
+    #                             (192, 192, 192),
+    #                             'CREATE TABLE',
+    #                             pygame.font.SysFont('arial', 26),
+    #                             callbackCreateButton)
 
-    joinButton = pygameButton((290, 75),
-                              (240, 50),
-                              (64, 64, 64),
-                              (192, 192, 192),
-                              'JOIN TABLE',
-                              pygame.font.SysFont('arial', 26),
-                              callbackJoinButton)
+    # joinButton = pygameButton((20, 75),
+    #                           (240, 50),
+    #                           (64, 64, 64),
+    #                           (192, 192, 192),
+    #                           'JOIN TABLE',
+    #                           pygame.font.SysFont('arial', 26),
+    #                           callbackJoinButton)
 
-    viewButton = pygameButton((560, 75),
+    viewButton = pygameButton((20, 75),
                               (240, 50),
                               (64, 64, 64),
                               (192, 192, 192),
@@ -144,8 +144,8 @@ def lobbyMain():
             if selected_option == 1:
                 buyinSize = 100
 
-        createButton.doEvents(allevents)
-        joinButton.doEvents(allevents)
+        #createButton.doEvents(allevents)
+        #joinButton.doEvents(allevents)
         viewButton.doEvents(allevents)
         keyButton.doEvents(allevents)
 
@@ -197,9 +197,9 @@ def lobbyMain():
 
         # Dropdowns
         keyButton.draw(screen)
-        viewButton.draw(screen)
+        #viewButton.draw(screen)
         if selected_table is not None:
-            joinButton.draw(screen)
+            viewButton.draw(screen)
         #createButton.draw(screen)
         menubuyinSize.draw(screen)
         menuTableSize.draw(screen)
