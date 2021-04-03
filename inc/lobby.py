@@ -161,6 +161,8 @@ def lobbyMain():
         if t == 0:
             tables = ses.get(f'{support.host}/poker/listTables/')
             tables = tables.json()
+            tables = tables['tables']
+            tables.sort(key=lambda x: x['id'])
 
         color1 = (192, 192, 192)
 
@@ -175,7 +177,7 @@ def lobbyMain():
         support.center_blit(screen, strImg, (145, y))
 
         rows = []
-        for r in tables['tables']:
+        for r in tables:
             y += 28
 
             s = str(r['id'])

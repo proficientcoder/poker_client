@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
     ###########################
 
-    while True:
+    while lobby.is_alive():
         results = requests.get(f'{support.host}/poker/listMyTables/', params={'key': support.key})
         results = results.json()
         results = results['tables']

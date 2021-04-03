@@ -6,12 +6,12 @@ import json
 with open('..\key.txt', 'r') as f:
     cfg = json.load(f)
 
+key = cfg['production']
+host = 'https://public-exchange.com'
+
 if os.getenv("DEVELOPMENT_MODE", "False") == "True":
     key = cfg['development']
     host = 'http://127.0.0.1:8000'
-else:
-    key = cfg['production']
-    host = 'https://public-exchange.com'
 
 
 def test_key():
